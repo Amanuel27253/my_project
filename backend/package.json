@@ -1,0 +1,41 @@
+{
+  "name": "essential-goods-backend",
+  "version": "1.0.0",
+  "description": "Essential Goods Distribution and Inventory Management System Backend",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand --detectOpenHandles --forceExit",
+    "seed": "node src/config/seed.js"
+  },
+  "keywords": [
+    "inventory",
+    "distribution",
+    "ethiopia",
+    "north-shewa",
+    "express",
+    "mongodb"
+  ],
+  "author": "@abreham",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.1.3",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.0.0"
+  }
+}
