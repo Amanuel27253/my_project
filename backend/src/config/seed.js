@@ -11,10 +11,12 @@ const Inventory = require('../models/Inventory');
 const Beneficiary = require('../models/Beneficiary');
 const StockMovement = require('../models/StockMovement');
 
-const seedData = async () => {
+const seedData = async ({ shouldConnect = true, shouldDisconnect = true } = {}) => {
   try {
     console.log('--- Starting Comprehensive Database Seeding ---');
-    await connectDB();
+    if (shouldConnect) {
+      await connectDB();
+    }
 
     // Clear existing collections
     console.log('Clearing existing collections...');
@@ -367,7 +369,9 @@ const seedData = async () => {
     console.error('Seeding failed:', error);
     process.exitCode = 1;
   } finally {
-    await disconnectDB();
+    if (shouldDisconnect) {
+      await disconnectDB();
+    }
   }
 };
 
