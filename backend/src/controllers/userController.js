@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/response');
 const { logAudit } = require('../middleware/audit');
+const { validatePassword } = require('../utils/passwordValidator');
 
 const getUsers = async (req, res) => {
   try {
@@ -46,7 +47,15 @@ const createUser = async (req, res) => {
       return errorResponse(res, 'Full name, username, password, and role are required', 400);
     }
 
-    const existingUser = await User.findOne({ username: username.toLowerCase() });
+    const cleanUsername = username.trim().toLowerCase();
+
+    // Server-side strong password validation
+    const validation = validatePassword(password, cleanUsername);
+    if (!validation.isValid) {
+      return errorResponse(res, validation.message, 400);
+    }
+
+    const existingUser = await User.findOne({ username: cleanUsername });
     if (existingUser) {
       return errorResponse(res, 'Username already exists', 409);
     }
@@ -55,7 +64,7 @@ const createUser = async (req, res) => {
 
     const newUser = await User.create({
       fullName,
-      username: username.toLowerCase(),
+      username: cleanUsername,
       email: email || '',
       passwordHash,
       phone: phone || '',
@@ -96,7 +105,12 @@ const updateUser = async (req, res) => {
     if (locationId !== undefined) user.locationId = locationId;
     if (language) user.language = language;
 
-    if (password && password.trim().length >= 6) {
+    if (password) {
+      // Server-side strong password validation
+      const validation = validatePassword(password, user.username);
+      if (!validation.isValid) {
+        return errorResponse(res, validation.message, 400);
+      }
       user.passwordHash = await User.hashPassword(password);
     }
 
@@ -113,6 +127,41 @@ const updateUser = async (req, res) => {
     return successResponse(res, userObj, 'User updated successfully');
   } catch (err) {
     return errorResponse(res, 'Failed to update user', 500);
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return errorResponse(res, 'New password is required', 400);
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    // Server-side strong password validation
+    const validation = validatePassword(newPassword, user.username);
+    if (!validation.isValid) {
+      return errorResponse(res, validation.message, 400);
+    }
+
+    user.passwordHash = await User.hashPassword(newPassword);
+    user.failedLogins = 0;
+    user.lockedUntil = null;
+    await user.save();
+
+    await logAudit(req, 'USER_PASSWORD_RESET', 'User', user._id, {
+      username: user.username,
+      resetBy: req.user.username
+    });
+
+    return successResponse(res, null, `Password for user '${user.username}' was reset successfully`);
+  } catch (err) {
+    console.error('Error resetting password:', err);
+    return errorResponse(res, 'Failed to reset password', 500);
   }
 };
 
@@ -156,5 +205,6 @@ module.exports = {
   getUserById,
   createUser,
   updateUser,
+  resetPassword,
   updateUserStatus
 };

@@ -65,18 +65,52 @@ describe('FR-AUTH: Authentication and User Security', () => {
     expect(lockedRes.body.message).toMatch(/locked/i);
   });
 
-  test('FR-AUTH-02: Change own password', async () => {
+  test('FR-AUTH-02: Change own password with strong password enforcement', async () => {
     const loginRes = await request(app)
       .post('/api/v1/auth/login')
       .send({ username: 'admin', password: 'Admin@123456' });
     const token = loginRes.body.data.token;
 
+    // Reject weak password (< 8 chars)
+    const weakRes = await request(app)
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: 'Admin@123456',
+        newPassword: 'short'
+      });
+    expect(weakRes.status).toBe(400);
+    expect(weakRes.body.message).toMatch(/between 8 and 64 characters/i);
+
+    // Reject common password
+    const commonRes = await request(app)
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: 'Admin@123456',
+        newPassword: 'Password@123'
+      });
+    expect(commonRes.status).toBe(400);
+    expect(commonRes.body.message).toMatch(/common/i);
+
+    // Reject password containing username
+    const usernameRes = await request(app)
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: 'Admin@123456',
+        newPassword: 'Admin#Password99!'
+      });
+    expect(usernameRes.status).toBe(400);
+    expect(usernameRes.body.message).toMatch(/username/i);
+
+    // Accept valid strong password
     const changeRes = await request(app)
       .post('/api/v1/auth/change-password')
       .set('Authorization', `Bearer ${token}`)
       .send({
         currentPassword: 'Admin@123456',
-        newPassword: 'NewAdmin@654321'
+        newPassword: 'Strong#NewPass2026!'
       });
 
     expect(changeRes.status).toBe(200);
@@ -85,7 +119,7 @@ describe('FR-AUTH: Authentication and User Security', () => {
     // Verify login with new password works
     const newLoginRes = await request(app)
       .post('/api/v1/auth/login')
-      .send({ username: 'admin', password: 'NewAdmin@654321' });
+      .send({ username: 'admin', password: 'Strong#NewPass2026!' });
 
     expect(newLoginRes.status).toBe(200);
   });

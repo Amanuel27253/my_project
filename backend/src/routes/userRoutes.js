@@ -12,6 +12,7 @@ router.get('/:id', userController.getUserById);
 // Admin-only mutations
 router.post('/', requireRoles('admin'), userController.createUser);
 router.put('/:id', requireRoles('admin'), userController.updateUser);
+router.post('/:id/reset-password', requireRoles('admin'), userController.resetPassword);
 router.patch('/:id/status', requireRoles('admin'), userController.updateUserStatus);
 
 module.exports = router;

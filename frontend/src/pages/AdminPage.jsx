@@ -13,8 +13,11 @@ import {
   AlertTriangle,
   X,
   Lock,
-  Unlock
+  Unlock,
+  Key
 } from 'lucide-react';
+import { PasswordRequirements } from '../components/PasswordRequirements';
+import { validatePassword } from '../utils/passwordValidator';
 
 export const AdminPage = () => {
   const { user } = useAuth();
@@ -32,6 +35,9 @@ export const AdminPage = () => {
   const [showOfficeModal, setShowOfficeModal] = useState(false);
   const [showGoodModal, setShowGoodModal] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
 
   // Forms
   const [userForm, setUserForm] = useState({
@@ -97,6 +103,11 @@ export const AdminPage = () => {
     e.preventDefault();
     setMsg('');
     setErrorMsg('');
+    const pwdCheck = validatePassword(userForm.password, userForm.username);
+    if (!pwdCheck.isValid) {
+      setErrorMsg(pwdCheck.message);
+      return;
+    }
     try {
       const res = await api.post('/users', userForm);
       if (res.data.success) {
@@ -117,6 +128,32 @@ export const AdminPage = () => {
       fetchData();
     } catch (err) {
       alert('Failed to update user status');
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!selectedUserForReset) return;
+    setMsg('');
+    setErrorMsg('');
+    const pwdCheck = validatePassword(resetPasswordValue, selectedUserForReset.username);
+    if (!pwdCheck.isValid) {
+      setErrorMsg(pwdCheck.message);
+      return;
+    }
+    try {
+      const res = await api.post(`/users/${selectedUserForReset._id}/reset-password`, {
+        newPassword: resetPasswordValue
+      });
+      if (res.data.success) {
+        setMsg(`Password for user '${selectedUserForReset.username}' was reset successfully`);
+        setShowResetModal(false);
+        setResetPasswordValue('');
+        setSelectedUserForReset(null);
+        fetchData();
+      }
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || 'Failed to reset password');
     }
   };
 
@@ -275,6 +312,17 @@ export const AdminPage = () => {
                           className={`btn btn-sm ${u.status === 'active' ? 'btn-secondary' : 'btn-success'}`}
                         >
                           {u.status === 'active' ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedUserForReset(u);
+                            setResetPasswordValue('');
+                            setShowResetModal(true);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          title="Reset user password"
+                        >
+                          <Key size={14} /> Reset
                         </button>
                         {u.lockedUntil && new Date(u.lockedUntil) > new Date() && (
                           <button
@@ -448,6 +496,8 @@ export const AdminPage = () => {
                 </div>
               </div>
 
+              <PasswordRequirements password={userForm.password} username={userForm.username} />
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
                   <label>Role</label>
@@ -486,6 +536,49 @@ export const AdminPage = () => {
                 </button>
                 <button type="submit" className="btn btn-primary">
                   Create Account
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      
+      {/* Modal: Reset Password */}
+      {showResetModal && selectedUserForReset && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Reset Password</h3>
+              <button onClick={() => setShowResetModal(false)} className="btn btn-secondary btn-sm"><X size={16} /></button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              Resetting password for <strong>{selectedUserForReset.fullName}</strong> (<code>{selectedUserForReset.username}</code>)
+            </p>
+
+            <form onSubmit={handleResetPassword}>
+              <div className="form-group">
+                <label>New Password</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={resetPasswordValue}
+                  onChange={(e) => setResetPasswordValue(e.target.value)}
+                  placeholder="Enter strong new password"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <PasswordRequirements password={resetPasswordValue} username={selectedUserForReset.username} />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.25rem' }}>
+                <button type="button" onClick={() => setShowResetModal(false)} className="btn btn-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Reset Password
                 </button>
               </div>
             </form>

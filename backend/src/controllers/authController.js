@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/response');
 const { logAudit } = require('../middleware/audit');
+const { validatePassword } = require('../utils/passwordValidator');
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_TIME_MS = 15 * 60 * 1000; // 15 minutes
@@ -100,14 +101,20 @@ const changePassword = async (req, res) => {
       return errorResponse(res, 'Current password and new password are required', 400);
     }
 
-    if (newPassword.length < 6) {
-      return errorResponse(res, 'New password must be at least 6 characters long', 400);
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
     }
 
-    const user = await User.findById(req.user._id);
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return errorResponse(res, 'Current password is incorrect', 400);
+    }
+
+    // Server-side strong password validation
+    const validation = validatePassword(newPassword, user.username);
+    if (!validation.isValid) {
+      return errorResponse(res, validation.message, 400);
     }
 
     user.passwordHash = await User.hashPassword(newPassword);
