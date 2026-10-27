@@ -38,7 +38,7 @@ export const ReportsPage = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div className="page-header-banner">
         <div>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}>
             {t('nav.reports', 'Administrative Reports & Transparency Analytics')}

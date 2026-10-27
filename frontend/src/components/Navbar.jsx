@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { Globe, LogOut, Key, MapPin, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Globe, LogOut, Key, MapPin, X, CheckCircle, AlertTriangle, Menu } from 'lucide-react';
 import api from '../api/client';
 import { PasswordRequirements } from './PasswordRequirements';
 import { validatePassword } from '../utils/passwordValidator';
 
-export const Navbar = () => {
+export const Navbar = ({ onToggleSidebar = () => {} }) => {
   const { user, logout, currentLanguage, changeLanguage } = useAuth();
   const { t } = useTranslation();
 
@@ -23,7 +23,7 @@ export const Navbar = () => {
 
   const getRoleLabel = (role) => {
     switch (role) {
-      case 'admin': return 'Administrator';
+      case 'admin': return 'Admin';
       case 'zone_officer': return 'Zone Officer';
       case 'woreda_officer': return 'Woreda Officer';
       case 'kebele_officer': return 'Kebele Officer';
@@ -79,61 +79,76 @@ export const Navbar = () => {
     <>
       <header className="top-header">
         <div className="header-brand">
-          <div style={{ width: '36px', height: '36px', background: '#1e3a8a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm mobile-menu-btn"
+            onClick={onToggleSidebar}
+            title="Open Navigation"
+            aria-label="Toggle navigation"
+          >
+            <Menu size={18} />
+          </button>
+
+          <div className="header-logo-badge">
             NS
           </div>
-          <div>
+          <div className="header-title-box">
             <h1>{t('systemTitle', 'Essential Goods Distribution System')}</h1>
-            <span>{t('zoneName', 'North Shewa Zone')} • {t('amharaRegion', 'Amhara Region, Ethiopia')}</span>
+            <span className="header-subtitle">
+              {t('zoneName', 'North Shewa Zone')} • {t('amharaRegion', 'Amhara Region')}
+            </span>
           </div>
         </div>
 
         <div className="header-controls">
           <button
             onClick={toggleLanguage}
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm lang-toggle-btn"
             title="Switch Language / ቋንቋ ይቀይሩ"
           >
-            <Globe size={16} />
-            {currentLanguage === 'en' ? 'አማርኛ' : 'English'}
+            <Globe size={15} />
+            <span className="lang-text">{currentLanguage === 'en' ? 'አማርኛ' : 'English'}</span>
           </button>
 
           {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '0.5rem', borderLeft: '1px solid var(--border)' }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{user.fullName}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem', justifyContent: 'flex-end' }}>
+            <div className="header-user-section">
+              <div className="header-user-info">
+                <div className="user-name">{user.fullName}</div>
+                <div className="user-meta">
                   <span className="badge badge-info">{getRoleLabel(user.role)}</span>
                   {user.location && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                      • <MapPin size={12} /> {user.location.name}
+                    <span className="user-location-text">
+                      • <MapPin size={11} /> {user.location.name}
                     </span>
                   )}
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setShowPasswordModal(true);
-                  setStatusMsg({ type: '', text: '' });
-                  setCurrentPassword('');
-                  setNewPassword('');
-                  setConfirmPassword('');
-                }}
-                className="btn btn-secondary btn-sm"
-                title="Change Password"
-              >
-                <Key size={15} />
-              </button>
+              <div className="header-action-buttons">
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(true);
+                    setStatusMsg({ type: '', text: '' });
+                    setCurrentPassword('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="btn btn-secondary btn-sm"
+                  title="Change Password"
+                  aria-label="Change Password"
+                >
+                  <Key size={15} />
+                </button>
 
-              <button
-                onClick={logout}
-                className="btn btn-secondary btn-sm"
-                style={{ color: 'var(--danger)' }}
-                title={t('nav.logout', 'Sign Out')}
-              >
-                <LogOut size={16} />
-              </button>
+                <button
+                  onClick={logout}
+                  className="btn btn-secondary btn-sm btn-logout"
+                  title={t('nav.logout', 'Sign Out')}
+                  aria-label="Sign Out"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
             </div>
           )}
         </div>

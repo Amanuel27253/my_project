@@ -210,7 +210,7 @@ export const StockRequestsPage = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div className="page-header-banner">
         <div>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}>
             {t('nav.stockRequests', 'Stock Requests & Supply Transfers')}
@@ -427,7 +427,7 @@ export const StockRequestsPage = () => {
       {showCreateReqModal && (
         <div className="modal-backdrop">
           <div className="modal-content">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div className="page-header-banner">
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Submit Stock Request</h3>
               <button onClick={() => setShowCreateReqModal(false)} className="btn btn-secondary btn-sm"><X size={16} /></button>
             </div>

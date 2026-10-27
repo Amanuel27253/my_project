@@ -60,7 +60,7 @@ export const DashboardPage = () => {
   return (
     <div>
       {/* Header Banner */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', background: '#fff', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+      <div className="page-header-banner" style={{ background: '#fff', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a' }}>
             {t('dashboard.welcome', 'Welcome back')}, {user?.fullName}

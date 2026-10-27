@@ -147,7 +147,7 @@ export const DistributionPage = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div className="page-header-banner">
         <div>
           <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}>
             {t('nav.distribution', 'Subsidy Distribution & Receipt Issuance')}
@@ -157,7 +157,7 @@ export const DistributionPage = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="banner-actions">
           <button
             onClick={() => { setActiveTab('new'); setCurrentReceipt(null); }}
             className={`btn ${activeTab === 'new' ? 'btn-primary' : 'btn-secondary'}`}
@@ -189,7 +189,7 @@ export const DistributionPage = () => {
 
       {/* Tab 1: New Distribution */}
       {activeTab === 'new' && !currentReceipt && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '1.5rem' }}>
+        <div className="distribution-layout-grid">
           
           {/* Beneficiary Selector Card */}
           <div className="card">
