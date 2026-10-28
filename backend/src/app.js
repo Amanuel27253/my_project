@@ -4,6 +4,9 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const { successResponse, errorResponse } = require('./utils/response');
 
+// Pre-load and register all Mongoose models
+require('./models');
+
 // Route imports
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');

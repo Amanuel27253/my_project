@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+require('./Location'); // Ensure Location schema is registered for populate('locationId')
 
 const userSchema = new mongoose.Schema(
   {
@@ -68,9 +69,9 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.passwordHash);
 };
 
-userSchema.statics.hashPassword = async function (plainPassword) {
+userSchema.statics.hashPassword = async function (password) {
   const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(plainPassword, salt);
+  return bcrypt.hash(password, salt);
 };
 
 module.exports = mongoose.model('User', userSchema);
