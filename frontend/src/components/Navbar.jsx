@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { Globe, LogOut, Key, MapPin, X, CheckCircle, AlertTriangle, Menu } from 'lucide-react';
+import { Globe, LogOut, Key, MapPin, X, CheckCircle, AlertTriangle, Menu, ShieldAlert } from 'lucide-react';
 import api from '../api/client';
 import { PasswordRequirements } from './PasswordRequirements';
 import { validatePassword } from '../utils/passwordValidator';
@@ -16,6 +16,13 @@ export const Navbar = ({ onToggleSidebar = () => {} }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
   const [submitting, setSubmitting] = useState(false);
+
+  // Mandatory forced password reset on first login with temporary password
+  useEffect(() => {
+    if (user?.mustChangePassword) {
+      setShowPasswordModal(true);
+    }
+  }, [user]);
 
   const toggleLanguage = () => {
     changeLanguage(currentLanguage === 'en' ? 'am' : 'en');
@@ -63,6 +70,11 @@ export const Navbar = ({ onToggleSidebar = () => {} }) => {
           setNewPassword('');
           setConfirmPassword('');
           setStatusMsg({ type: '', text: '' });
+          if (user?.mustChangePassword) {
+            const updatedUser = { ...user, mustChangePassword: false };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            window.location.reload();
+          }
         }, 1500);
       }
     } catch (err) {
@@ -158,15 +170,37 @@ export const Navbar = ({ onToggleSidebar = () => {} }) => {
       {showPasswordModal && (
         <div className="modal-backdrop">
           <div className="modal-content" style={{ maxWidth: '480px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Change Your Password</h3>
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="btn btn-secondary btn-sm"
-              >
-                <X size={16} />
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Key size={18} color="#1e3a8a" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
+                  {user?.mustChangePassword
+                    ? (currentLanguage === 'am' ? 'የግዴታ የይለፍ ቃል መቀየር' : 'Mandatory Password Reset')
+                    : (currentLanguage === 'am' ? 'የይለፍ ቃል ቀይር' : 'Change Your Password')}
+                </h3>
+              </div>
+              {!user?.mustChangePassword && (
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '4px' }}
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
+
+            {user?.mustChangePassword && (
+              <div style={{ background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', padding: '0.75rem', borderRadius: '6px', fontSize: '0.84rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                <ShieldAlert size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong>{currentLanguage === 'am' ? 'የደህንነት ማስጠንቀቂያ:' : 'Security Policy Requirement:'}</strong>{' '}
+                  {currentLanguage === 'am'
+                    ? 'አካውንትዎ በጊዜያዊ የይለፍ ቃል የተዘጋጀ በመሆኑ፣ ስርዓቱን ለመጠቀም አዲስ የግል የይለፍ ቃል ማዘጋጀት ግዴታ ነው።'
+                    : 'Your account was initialized with a temporary password. You must set a new personal password before proceeding.'}
+                </div>
+              </div>
+            )}
 
             {statusMsg.text && (
               <div className={`alert ${statusMsg.type === 'success' ? 'alert-success' : 'alert-danger'}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>

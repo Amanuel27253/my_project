@@ -19,6 +19,14 @@ const Counter = require('./Counter');
 const Notification = require('./Notification');
 const Setting = require('./Setting');
 
+// Enterprise Simplified Stock Balance & Hybrid Model additions
+const CooperativeStore = require('./CooperativeStore');
+const DistributionCycle = require('./DistributionCycle');
+const DistributionTransaction = require('./DistributionTransaction');
+const GotSchedule = require('./GotSchedule');
+const SmsLog = require('./SmsLog');
+const BackupLog = require('./BackupLog');
+
 module.exports = {
   Location,
   User,
@@ -36,5 +44,11 @@ module.exports = {
   AuditLog,
   Counter,
   Notification,
-  Setting
+  Setting,
+  CooperativeStore,
+  DistributionCycle,
+  DistributionTransaction,
+  GotSchedule,
+  SmsLog,
+  BackupLog
 };

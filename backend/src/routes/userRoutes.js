@@ -6,13 +6,13 @@ const { authenticate, requireRoles } = require('../middleware/auth');
 router.use(authenticate);
 
 // List and get user
-router.get('/', userController.getUsers);
+router.get('/', requireRoles('admin', 'SYSTEM_ADMIN', 'zone_officer', 'ZONE_EXPERT', 'woreda_officer', 'WOREDA_OFFICER'), userController.getUsers);
 router.get('/:id', userController.getUserById);
 
-// Admin-only mutations
-router.post('/', requireRoles('admin'), userController.createUser);
-router.put('/:id', requireRoles('admin'), userController.updateUser);
-router.post('/:id/reset-password', requireRoles('admin'), userController.resetPassword);
-router.patch('/:id/status', requireRoles('admin'), userController.updateUserStatus);
+// Admin & Delegated Woreda mutations
+router.post('/', requireRoles('admin', 'SYSTEM_ADMIN', 'woreda_officer', 'WOREDA_OFFICER'), userController.createUser);
+router.put('/:id', requireRoles('admin', 'SYSTEM_ADMIN', 'woreda_officer', 'WOREDA_OFFICER'), userController.updateUser);
+router.post('/:id/reset-password', requireRoles('admin', 'SYSTEM_ADMIN', 'woreda_officer', 'WOREDA_OFFICER'), userController.resetPassword);
+router.patch('/:id/status', requireRoles('admin', 'SYSTEM_ADMIN', 'woreda_officer', 'WOREDA_OFFICER'), userController.updateUserStatus);
 
 module.exports = router;

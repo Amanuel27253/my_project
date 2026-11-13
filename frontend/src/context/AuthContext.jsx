@@ -69,10 +69,28 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('language', lng);
   };
 
+  const ROLE_ALIASES = {
+    SYSTEM_ADMIN: ['SYSTEM_ADMIN', 'admin'],
+    admin: ['SYSTEM_ADMIN', 'admin'],
+    ZONE_EXPERT: ['ZONE_EXPERT', 'zone_officer'],
+    zone_officer: ['ZONE_EXPERT', 'zone_officer'],
+    WOREDA_OFFICER: ['WOREDA_OFFICER', 'woreda_officer'],
+    woreda_officer: ['WOREDA_OFFICER', 'woreda_officer'],
+    KEBELE_OFFICER: ['KEBELE_OFFICER', 'kebele_officer'],
+    kebele_officer: ['KEBELE_OFFICER', 'kebele_officer'],
+    STOREKEEPER: ['STOREKEEPER', 'store_manager'],
+    store_manager: ['STOREKEEPER', 'store_manager']
+  };
+
   const hasRole = (...roles) => {
     if (!user) return false;
-    if (user.role === 'admin') return true;
-    return roles.includes(user.role);
+    if (user.role === 'admin' || user.role === 'SYSTEM_ADMIN') return true;
+    
+    return roles.some(r => {
+      if (user.role === r) return true;
+      if (ROLE_ALIASES[r] && ROLE_ALIASES[r].includes(user.role)) return true;
+      return false;
+    });
   };
 
   return (

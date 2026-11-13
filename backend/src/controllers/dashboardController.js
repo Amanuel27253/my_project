@@ -4,6 +4,8 @@ const StockRequest = require('../models/StockRequest');
 const StockTransfer = require('../models/StockTransfer');
 const Distribution = require('../models/Distribution');
 const Alert = require('../models/Alert');
+const CooperativeStore = require('../models/CooperativeStore');
+const DistributionTransaction = require('../models/DistributionTransaction');
 const { successResponse, errorResponse } = require('../utils/response');
 const { getAccessibleLocationIds } = require('../utils/locationScope');
 
@@ -33,6 +35,23 @@ const getDashboardSummary = async (req, res) => {
         };
       }
       totalStockByGoods[key].quantity += b.quantity;
+    });
+
+    // Add simplified stock balances from cooperative stores
+    const stores = await CooperativeStore.find();
+    stores.forEach(s => {
+      s.stocks?.forEach(stk => {
+        const key = stk.goodsName;
+        if (!totalStockByGoods[key]) {
+          totalStockByGoods[key] = {
+            name: stk.goodsName,
+            nameAm: stk.goodsNameAm,
+            unit: stk.unit,
+            quantity: 0
+          };
+        }
+        totalStockByGoods[key].quantity += (stk.totalStock || 0);
+      });
     });
 
     // 2. Beneficiaries count
@@ -80,7 +99,11 @@ const getDashboardSummary = async (req, res) => {
     if (officeFilter) {
       distFilter.kebeleId = officeFilter;
     }
-    const monthlyDistributionsCount = await Distribution.countDocuments(distFilter);
+    const [legacyCount, posCount] = await Promise.all([
+      Distribution.countDocuments(distFilter),
+      DistributionTransaction.countDocuments({ status: 'COLLECTED' })
+    ]);
+    const monthlyDistributionsCount = legacyCount + posCount;
 
     return successResponse(res, {
       role: req.user.role,

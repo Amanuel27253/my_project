@@ -685,28 +685,42 @@ tr:hover td {
 }
 
 /* =========================================
-   Print Styles
+   Print Styles (Optimized for Booklet Slips, Posters, Letters, & Receipts)
    ========================================= */
 @media print {
   body * {
     visibility: hidden;
   }
-  .receipt-paper, .receipt-paper * {
+  .printable-document,
+  .printable-document *,
+  .receipt-paper,
+  .receipt-paper *,
+  .notice-poster-paper,
+  .notice-poster-paper *,
+  .booklet-slip-paper,
+  .booklet-slip-paper * {
     visibility: visible;
   }
-  .receipt-paper {
+  .printable-document,
+  .receipt-paper,
+  .notice-poster-paper,
+  .booklet-slip-paper {
     position: absolute;
     left: 0;
     top: 0;
-    width: 100%;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-    margin: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 1.5rem !important;
+    margin: 0 !important;
+    background: #fff !important;
   }
   .no-print,
   .sidebar,
-  .top-header {
+  .top-header,
+  .header-controls,
+  button {
     display: none !important;
   }
 }

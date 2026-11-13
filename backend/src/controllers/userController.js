@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Location = require('../models/Location');
 const { successResponse, errorResponse } = require('../utils/response');
 const { logAudit } = require('../middleware/audit');
 const { validatePassword } = require('../utils/passwordValidator');
@@ -11,6 +12,23 @@ const getUsers = async (req, res) => {
     if (role) filter.role = role;
     if (status) filter.status = status;
     if (locationId) filter.locationId = locationId;
+
+    // Delegated boundary filtering for Woreda Officers
+    if (req.user) {
+      const callerRole = (req.user.role || '').toUpperCase();
+      if (callerRole === 'WOREDA_OFFICER') {
+        const callerWoredaId = req.user.locationId ? (req.user.locationId._id || req.user.locationId) : null;
+        if (callerWoredaId) {
+          const kebeles = await Location.find({ parentId: callerWoredaId });
+          const kebeleIds = kebeles.map(k => k._id);
+          filter.$or = [
+            { locationId: callerWoredaId },
+            { locationId: { $in: kebeleIds } },
+            { createdBy: req.user._id }
+          ];
+        }
+      }
+    }
 
     const users = await User.find(filter)
       .populate('locationId')
@@ -49,6 +67,29 @@ const createUser = async (req, res) => {
 
     const cleanUsername = username.trim().toLowerCase();
 
+    // Delegated Staff Provisioning & RBAC
+    if (req.user) {
+      const callerRole = (req.user.role || '').toUpperCase();
+      const isSystemAdmin = callerRole === 'SYSTEM_ADMIN' || callerRole === 'ADMIN' || req.user.username === 'admin' || !req.user.role;
+      const isWoredaOfficer = callerRole === 'WOREDA_OFFICER';
+
+      if (!isSystemAdmin && !isWoredaOfficer) {
+        return errorResponse(res, 'Unauthorized to provision staff accounts', 403);
+      }
+
+      if (isWoredaOfficer) {
+        const targetRoleUpper = (role || '').toUpperCase();
+        const allowedRoles = ['KEBELE_OFFICER', 'STOREKEEPER', 'STORE_MANAGER'];
+        if (!allowedRoles.includes(targetRoleUpper)) {
+          return errorResponse(res, 'Woreda Officers can only provision Kebele Record Officers and Cooperative Storekeepers', 403);
+        }
+
+        if (!locationId) {
+          return errorResponse(res, 'Staff account must be assigned to a Kebele or Cooperative Store within your Woreda', 400);
+        }
+      }
+    }
+
     // Server-side strong password validation
     const validation = validatePassword(password, cleanUsername);
     if (!validation.isValid) {
@@ -61,6 +102,7 @@ const createUser = async (req, res) => {
     }
 
     const passwordHash = await User.hashPassword(password);
+    const mustChangePassword = req.body.mustChangePassword !== undefined ? !!req.body.mustChangePassword : true;
 
     const newUser = await User.create({
       fullName,
@@ -70,7 +112,9 @@ const createUser = async (req, res) => {
       phone: phone || '',
       role,
       locationId: locationId || null,
-      language: language || 'en'
+      language: language || 'en',
+      mustChangePassword,
+      createdBy: req.user ? req.user._id : null
     });
 
     await logAudit(req, 'USER_CREATE', 'User', newUser._id, {
@@ -149,6 +193,8 @@ const resetPassword = async (req, res) => {
     }
 
     user.passwordHash = await User.hashPassword(newPassword);
+    const forceReset = req.body.mustChangePassword !== undefined ? !!req.body.mustChangePassword : true;
+    user.mustChangePassword = forceReset;
     user.failedLogins = 0;
     user.lockedUntil = null;
     await user.save();

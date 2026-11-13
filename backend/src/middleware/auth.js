@@ -32,13 +32,34 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+const ROLE_ALIASES = {
+  SYSTEM_ADMIN: ['SYSTEM_ADMIN', 'admin'],
+  admin: ['SYSTEM_ADMIN', 'admin'],
+  ZONE_EXPERT: ['ZONE_EXPERT', 'zone_officer'],
+  zone_officer: ['ZONE_EXPERT', 'zone_officer'],
+  WOREDA_OFFICER: ['WOREDA_OFFICER', 'woreda_officer'],
+  woreda_officer: ['WOREDA_OFFICER', 'woreda_officer'],
+  KEBELE_OFFICER: ['KEBELE_OFFICER', 'kebele_officer'],
+  kebele_officer: ['KEBELE_OFFICER', 'kebele_officer'],
+  STOREKEEPER: ['STOREKEEPER', 'store_manager'],
+  store_manager: ['STOREKEEPER', 'store_manager']
+};
+
 const requireRoles = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return errorResponse(res, 'Authentication required', 401);
     }
 
-    if (!roles.includes(req.user.role)) {
+    const acceptedRoles = new Set();
+    roles.forEach(r => {
+      acceptedRoles.add(r);
+      if (ROLE_ALIASES[r]) {
+        ROLE_ALIASES[r].forEach(alias => acceptedRoles.add(alias));
+      }
+    });
+
+    if (!acceptedRoles.has(req.user.role)) {
       return errorResponse(
         res,
         `Access denied. Required role(s): ${roles.join(', ')}. Current role: ${req.user.role}`,
@@ -56,7 +77,7 @@ const requireLocationAccess = (locationParamName = 'locationId') => {
       return errorResponse(res, 'Authentication required', 401);
     }
 
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'SYSTEM_ADMIN') {
       return next();
     }
 

@@ -8,28 +8,51 @@ router.use(authenticate);
 // Duplicate check helper
 router.get('/check-id', beneficiaryController.checkIdAvailability);
 
+// Booklet slip data
+router.get('/:id/booklet-slip', beneficiaryController.getBookletSlipData);
+
 // Read beneficiaries (scoped by role/office)
 router.get('/', beneficiaryController.getBeneficiaries);
 router.get('/:id', beneficiaryController.getBeneficiaryById);
 
-// Kebele officers and Admin register beneficiaries
+// Register beneficiaries
 router.post(
   '/',
-  requireRoles('admin', 'kebele_officer'),
+  requireRoles('admin', 'SYSTEM_ADMIN', 'kebele_officer', 'KEBELE_OFFICER'),
   beneficiaryController.registerBeneficiary
+);
+
+// Update family members and status
+router.put(
+  '/:id/family',
+  requireRoles('admin', 'SYSTEM_ADMIN', 'kebele_officer', 'KEBELE_OFFICER'),
+  beneficiaryController.updateFamilyMembers
+);
+
+// Inter-Kebele transfers
+router.post(
+  '/:id/transfer-request',
+  requireRoles('admin', 'SYSTEM_ADMIN', 'kebele_officer', 'KEBELE_OFFICER', 'woreda_officer', 'WOREDA_OFFICER'),
+  beneficiaryController.requestHouseholdTransfer
+);
+
+router.post(
+  '/:id/transfer-approve',
+  requireRoles('admin', 'SYSTEM_ADMIN', 'woreda_officer', 'WOREDA_OFFICER'),
+  beneficiaryController.approveHouseholdTransfer
 );
 
 // Verify beneficiary
 router.post(
   '/:id/verify',
-  requireRoles('admin', 'kebele_officer', 'woreda_officer'),
+  requireRoles('admin', 'SYSTEM_ADMIN', 'kebele_officer', 'KEBELE_OFFICER', 'woreda_officer', 'WOREDA_OFFICER'),
   beneficiaryController.verifyBeneficiary
 );
 
 // Suspend beneficiary
 router.post(
   '/:id/suspend',
-  requireRoles('admin', 'kebele_officer', 'woreda_officer'),
+  requireRoles('admin', 'SYSTEM_ADMIN', 'kebele_officer', 'KEBELE_OFFICER', 'woreda_officer', 'WOREDA_OFFICER'),
   beneficiaryController.suspendBeneficiary
 );
 

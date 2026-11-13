@@ -34,7 +34,18 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['admin', 'zone_officer', 'woreda_officer', 'kebele_officer', 'store_manager']
+      enum: [
+        'SYSTEM_ADMIN',
+        'ZONE_EXPERT',
+        'WOREDA_OFFICER',
+        'KEBELE_OFFICER',
+        'STOREKEEPER',
+        'admin',
+        'zone_officer',
+        'woreda_officer',
+        'kebele_officer',
+        'store_manager'
+      ]
     },
     locationId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -57,6 +68,15 @@ const userSchema = new mongoose.Schema(
     },
     lockedUntil: {
       type: Date,
+      default: null
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       default: null
     }
   },

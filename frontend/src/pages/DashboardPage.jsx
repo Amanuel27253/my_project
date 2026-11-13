@@ -60,7 +60,7 @@ export const DashboardPage = () => {
   return (
     <div>
       {/* Header Banner */}
-      <div className="page-header-banner" style={{ background: '#fff', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+      <div className="page-header-banner" style={{ background: '#fff', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '1.25rem' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0f172a' }}>
             {t('dashboard.welcome', 'Welcome back')}, {user?.fullName}
@@ -70,26 +70,50 @@ export const DashboardPage = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {(user?.role === 'admin' || user?.role === 'kebele_officer') && (
-            <Link to="/distribution" className="btn btn-primary btn-sm">
-              <Send size={15} />
-              {t('nav.distribution', 'New Distribution')}
-            </Link>
-          )}
-          {(user?.role === 'admin' || user?.role === 'kebele_officer') && (
-            <Link to="/beneficiaries" className="btn btn-secondary btn-sm">
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <Link to="/public" className="btn btn-secondary btn-sm" style={{ borderColor: '#059669', color: '#059669', fontWeight: 600 }}>
+            Public Citizen Portal
+          </Link>
+          {(user?.role === 'admin' || user?.role === 'SYSTEM_ADMIN' || user?.role === 'kebele_officer' || user?.role === 'KEBELE_OFFICER') && (
+            <Link to="/kebele" className="btn btn-primary btn-sm">
               <Users size={15} />
-              {t('beneficiaries.register', 'Register Household')}
+              Kebele Officer
             </Link>
           )}
-          {(user?.role === 'admin' || user?.role === 'woreda_officer' || user?.role === 'kebele_officer') && (
-            <Link to="/requests" className="btn btn-secondary btn-sm">
-              <ArrowRightLeft size={15} />
-              {t('stockRequests.createRequest', 'Request Stock')}
+          {(user?.role === 'admin' || user?.role === 'SYSTEM_ADMIN' || user?.role === 'store_manager' || user?.role === 'STOREKEEPER') && (
+            <Link to="/store" className="btn btn-primary btn-sm" style={{ background: '#9333ea' }}>
+              <Send size={15} />
+              Counter POS
             </Link>
           )}
         </div>
+      </div>
+
+      {/* Enterprise Governance Quick Access Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        <Link to="/zone" className="card" style={{ padding: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', textDecoration: 'none' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1e3a8a', textTransform: 'uppercase' }}>1. Zone Expert</span>
+          <div style={{ fontWeight: 700, color: '#1e3a8a', fontSize: '0.95rem' }}>Zone Oversight & Quotas</div>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Woreda shares & price ceilings</span>
+        </Link>
+
+        <Link to="/woreda" className="card" style={{ padding: '1rem', background: '#fef3c7', border: '1px solid #fde68a', textDecoration: 'none' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#92400e', textTransform: 'uppercase' }}>2. Woreda Officer</span>
+          <div style={{ fontWeight: 700, color: '#92400e', fontSize: '0.95rem' }}>Debre Berhan Trade Office</div>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Kebele allocations & letters</span>
+        </Link>
+
+        <Link to="/kebele" className="card" style={{ padding: '1rem', background: '#f0fdf4', border: '1px solid #bbf7d0', textDecoration: 'none' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>3. Kebele Officer</span>
+          <div style={{ fontWeight: 700, color: '#166534', fontSize: '0.95rem' }}>Baso Kebele Census</div>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Anti-duplicate & booklet slips</span>
+        </Link>
+
+        <Link to="/store" className="card" style={{ padding: '1rem', background: '#faf5ff', border: '1px solid #e9d5ff', textDecoration: 'none' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#6b21a8', textTransform: 'uppercase' }}>4. Cooperative Store</span>
+          <div style={{ fontWeight: 700, color: '#6b21a8', fontSize: '0.95rem' }}>Counter POS & Stock</div>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Atomic handover & SMS alerts</span>
+        </Link>
       </div>
 
       {/* Metric Cards */}

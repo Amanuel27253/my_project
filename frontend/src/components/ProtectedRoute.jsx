@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
 
   if (loading) {
     return (
@@ -18,7 +18,7 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    if (user.role !== 'admin' && !allowedRoles.includes(user.role)) {
+    if (!hasRole(...allowedRoles)) {
       return (
         <div style={{ padding: '2rem', textAlign: 'center', color: '#c0392b' }}>
           <h2>Access Denied</h2>

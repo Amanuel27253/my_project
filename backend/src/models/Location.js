@@ -24,10 +24,31 @@ const locationSchema = new mongoose.Schema(
       required: true,
       enum: ['zone', 'woreda', 'kebele']
     },
+    adminType: {
+      type: String,
+      enum: ['CITY_ADMIN', 'RURAL_WOREDA', 'KEBELE', 'ZONE'],
+      default: 'RURAL_WOREDA'
+    },
+    woredaCode: {
+      type: String,
+      trim: true
+    },
     parentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location',
       default: null
+    },
+    population: {
+      type: Number,
+      default: 0
+    },
+    householdCount: {
+      type: Number,
+      default: 0
+    },
+    gots: {
+      type: [String],
+      default: ['Got 01 (መሀል ሰፈር)', 'Got 02 (አባይ ማዶ)', 'Got 03 (ወይራ ሰፈር)', 'Got 04 (ብርሃን ሰፈር)']
     },
     status: {
       type: String,
@@ -36,9 +57,15 @@ const locationSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
 );
+
+locationSchema.virtual('nameEn').get(function() {
+  return this.name;
+});
 
 locationSchema.index({ type: 1, parentId: 1 });
 

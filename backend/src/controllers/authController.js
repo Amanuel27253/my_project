@@ -75,7 +75,8 @@ const login = async (req, res) => {
         phone: user.phone,
         role: user.role,
         language: user.language,
-        location: user.locationId
+        location: user.locationId,
+        mustChangePassword: user.mustChangePassword || false
       }
     }, 'Login successful');
   } catch (err) {
@@ -118,6 +119,7 @@ const changePassword = async (req, res) => {
     }
 
     user.passwordHash = await User.hashPassword(newPassword);
+    user.mustChangePassword = false;
     await user.save();
 
     await logAudit(

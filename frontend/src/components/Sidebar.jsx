@@ -12,15 +12,20 @@ import {
   Bell,
   ShieldCheck,
   History,
-  X
+  X,
+  TrendingUp,
+  Building2,
+  UserCheck,
+  Store,
+  Globe,
+  Printer
 } from 'lucide-react';
 
 export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const { t } = useTranslation();
 
   const handleLinkClick = () => {
-    // Automatically close mobile drawer when navigating
     if (onClose) onClose();
   };
 
@@ -28,7 +33,20 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
     <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
       <div className="sidebar-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ width: '28px', height: '28px', background: 'var(--primary)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>
+          <div
+            style={{
+              width: '28px',
+              height: '28px',
+              background: 'var(--primary)',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '0.85rem'
+            }}
+          >
             NS
           </div>
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
@@ -47,24 +65,64 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
       </div>
 
       <nav className="sidebar-nav">
+        {/* General Dashboard */}
         <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
           <LayoutDashboard size={18} />
-          <span>{t('nav.dashboard', 'Dashboard')}</span>
+          <span>{t('nav.dashboard', 'Overview Dashboard')}</span>
+        </NavLink>
+
+        {/* ========================================================
+            ROLE-SPECIFIC ENTERPRISE MODULES (Section 4 Architecture)
+            ======================================================== */}
+        <div style={{ margin: '0.9rem 0.5rem 0.25rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+          GOVERNANCE MODULES
+        </div>
+
+        {/* 1. Zone Expert Module */}
+        {(hasRole('ZONE_EXPERT', 'zone_officer') || hasRole('SYSTEM_ADMIN', 'admin')) && (
+          <NavLink to="/zone" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
+            <TrendingUp size={18} color="#2563eb" />
+            <span>{t('nav.zoneExpert', 'Zone Trade Expert')}</span>
+          </NavLink>
+        )}
+
+        {/* 2. Woreda Officer Module */}
+        {(hasRole('WOREDA_OFFICER', 'woreda_officer') || hasRole('ZONE_EXPERT', 'zone_officer') || hasRole('SYSTEM_ADMIN', 'admin')) && (
+          <NavLink to="/woreda" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
+            <Building2 size={18} color="#d97706" />
+            <span>{t('nav.woredaOfficer', 'Woreda Trade Officer')}</span>
+          </NavLink>
+        )}
+
+        {/* 3. Kebele Officer Module */}
+        {(hasRole('KEBELE_OFFICER', 'kebele_officer') || hasRole('SYSTEM_ADMIN', 'admin')) && (
+          <NavLink to="/kebele" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
+            <UserCheck size={18} color="#16a34a" />
+            <span>{t('nav.kebeleOfficer', 'Kebele Record Officer')}</span>
+          </NavLink>
+        )}
+
+        {/* 4. Storekeeper POS Module */}
+        {(hasRole('STOREKEEPER', 'store_manager') || hasRole('SYSTEM_ADMIN', 'admin')) && (
+          <NavLink to="/store" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
+            <Store size={18} color="#9333ea" />
+            <span>{t('nav.storekeeper', 'Cooperative Store POS')}</span>
+          </NavLink>
+        )}
+
+        {/* Core Operational Links */}
+        <div style={{ margin: '0.9rem 0.5rem 0.25rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+          OPERATIONS
+        </div>
+
+        <NavLink to="/beneficiaries" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
+          <Users size={18} />
+          <span>{t('nav.beneficiaries', 'Beneficiaries & Censuses')}</span>
         </NavLink>
 
         <NavLink to="/inventory" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
           <Package size={18} />
           <span>{t('nav.inventory', 'Inventory & Stock')}</span>
-        </NavLink>
-
-        <NavLink to="/requests" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
-          <ArrowRightLeft size={18} />
-          <span>{t('nav.stockRequests', 'Requests & Transfers')}</span>
-        </NavLink>
-
-        <NavLink to="/beneficiaries" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
-          <Users size={18} />
-          <span>{t('nav.beneficiaries', 'Beneficiaries')}</span>
         </NavLink>
 
         <NavLink to="/distribution" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
@@ -74,7 +132,7 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
 
         <NavLink to="/reports" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
           <FileText size={18} />
-          <span>{t('nav.reports', 'Reports & Analytics')}</span>
+          <span>{t('nav.reports', 'Reports & Reconciliation')}</span>
         </NavLink>
 
         <NavLink to="/alerts" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
@@ -82,9 +140,20 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
           <span>{t('nav.alerts', 'Alerts & Warnings')}</span>
         </NavLink>
 
-        {user && user.role === 'admin' && (
+        {/* Zero-Login Public Transparency Portal Link */}
+        <div style={{ margin: '0.9rem 0.5rem 0.25rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+          CITIZEN TRANSPARENCY
+        </div>
+
+        <NavLink to="/public" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
+          <Globe size={18} color="#059669" />
+          <span style={{ fontWeight: 600 }}>Public Citizen Portal (Zero Login)</span>
+        </NavLink>
+
+        {/* Admin Section */}
+        {hasRole('SYSTEM_ADMIN', 'admin') && (
           <>
-            <div style={{ margin: '1rem 0.5rem 0.25rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+            <div style={{ margin: '0.9rem 0.5rem 0.25rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
               ADMINISTRATION
             </div>
 

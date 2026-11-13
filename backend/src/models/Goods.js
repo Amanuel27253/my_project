@@ -21,7 +21,23 @@ const goodsSchema = new mongoose.Schema(
     unit: {
       type: String,
       required: true,
-      enum: ['kg', 'liter', 'piece']
+      enum: ['kg', 'liter', 'piece', 'quintal']
+    },
+    priceCeiling: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: [0, 'Price ceiling cannot be negative']
+    },
+    defaultQuotaPerPerson: {
+      type: Number,
+      default: 2,
+      min: 0
+    },
+    defaultMaxPerHousehold: {
+      type: Number,
+      default: 10,
+      min: 0
     },
     status: {
       type: String,

@@ -22,6 +22,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const alertRoutes = require('./routes/alertRoutes');
 const auditLogRoutes = require('./routes/auditLogRoutes');
+const enterpriseRoutes = require('./routes/enterpriseDistributionRoutes');
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/alerts', alertRoutes);
 app.use('/api/v1/audit-logs', auditLogRoutes);
+app.use('/api/v1/distribution-management', enterpriseRoutes);
 
 // 404 Handler
 app.use((req, res) => {
