@@ -47,6 +47,181 @@ export const WoredaOfficerPage = () => {
     locationId: ''
   });
 
+  // Option A: Add Kebele & Officer State
+  const [showKebeleModal, setShowKebeleModal] = useState(false);
+  const [submittingKebele, setSubmittingKebele] = useState(false);
+  const [kebeleForm, setKebeleForm] = useState({
+    name: '',
+    nameAm: '',
+    code: '',
+    population: '',
+    householdCount: '',
+    gotsString: 'Got 01 (መሀል ሰፈር), Got 02 (አባይ ማዶ), Got 03 (ወይራ ሰፈር)',
+    officerFullName: '',
+    officerUsername: '',
+    officerPassword: '',
+    officerPhone: '',
+    officerEmail: ''
+  });
+
+  // Option A: Add Distributor & Storekeeper State
+  const [showDistributorModal, setShowDistributorModal] = useState(false);
+  const [submittingDistributor, setSubmittingDistributor] = useState(false);
+  const [distributorForm, setDistributorForm] = useState({
+    kebeleId: '',
+    name: '',
+    nameAm: '',
+    code: '',
+    contactPhone: '',
+    address: '',
+    storekeeperFullName: '',
+    storekeeperUsername: '',
+    storekeeperPassword: '',
+    storekeeperPhone: '',
+    storekeeperEmail: ''
+  });
+
+  const handleOpenAddKebele = async () => {
+    try {
+      const codeRes = await api.get('/locations/next-code?type=kebele');
+      const suggestedCode = codeRes.data?.data?.nextCode || '';
+      setKebeleForm({
+        name: '',
+        nameAm: '',
+        code: suggestedCode,
+        population: '',
+        householdCount: '',
+        gotsString: 'Got 01 (መሀል ሰፈር), Got 02 (አባይ ማዶ), Got 03 (ወይራ ሰፈር)',
+        officerFullName: '',
+        officerUsername: '',
+        officerPassword: '',
+        officerPhone: '',
+        officerEmail: ''
+      });
+      setShowKebeleModal(true);
+    } catch {
+      setShowKebeleModal(true);
+    }
+  };
+
+  const handleSubmitKebele = async (e) => {
+    e.preventDefault();
+    setSubmittingKebele(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const gots = kebeleForm.gotsString
+        ? kebeleForm.gotsString.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const payload = {
+        name: kebeleForm.name,
+        nameAm: kebeleForm.nameAm,
+        code: kebeleForm.code,
+        population: Number(kebeleForm.population) || 0,
+        householdCount: Number(kebeleForm.householdCount) || 0,
+        gots,
+        officer: {
+          fullName: kebeleForm.officerFullName,
+          username: kebeleForm.officerUsername,
+          password: kebeleForm.officerPassword,
+          phone: kebeleForm.officerPhone,
+          email: kebeleForm.officerEmail
+        }
+      };
+      const res = await api.post('/locations/kebele-with-officer', payload);
+      if (res.data.success) {
+        setSuccessMsg(
+          `Kebele '${res.data.data.kebele.name}' (${res.data.data.kebele.code}) created! Kebele Officer '${res.data.data.officer.username}' can now log in.`
+        );
+        setShowKebeleModal(false);
+        await loadWoredaData();
+      }
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || 'Failed to create Kebele and Officer');
+    } finally {
+      setSubmittingKebele(false);
+    }
+  };
+
+  const handleOpenAddDistributor = (presetKebeleId = null) => {
+    const targetKebeleId = presetKebeleId || woredaData?.kebeleStats?.[0]?._id || '';
+    let suggestedCode = '';
+    let kebeleName = '';
+    if (targetKebeleId) {
+      const targetK = woredaData?.kebeleStats?.find(k => k._id === targetKebeleId);
+      if (targetK) {
+        kebeleName = targetK.name;
+        suggestedCode = `DIST-${targetK.code}`;
+      }
+    }
+    setDistributorForm({
+      kebeleId: targetKebeleId,
+      name: kebeleName ? `${kebeleName} Consumer Cooperative Store` : '',
+      nameAm: '',
+      code: suggestedCode,
+      contactPhone: '',
+      address: '',
+      storekeeperFullName: '',
+      storekeeperUsername: '',
+      storekeeperPassword: '',
+      storekeeperPhone: '',
+      storekeeperEmail: ''
+    });
+    setShowDistributorModal(true);
+  };
+
+  const handleKebeleChangeForDistributor = (kId) => {
+    const targetK = woredaData?.kebeleStats?.find(k => k._id === kId);
+    let suggestedCode = '';
+    let kebeleName = '';
+    if (targetK) {
+      kebeleName = targetK.name;
+      suggestedCode = `DIST-${targetK.code}`;
+    }
+    setDistributorForm(prev => ({
+      ...prev,
+      kebeleId: kId,
+      name: kebeleName ? `${kebeleName} Consumer Cooperative Store` : prev.name,
+      code: suggestedCode
+    }));
+  };
+
+  const handleSubmitDistributor = async (e) => {
+    e.preventDefault();
+    setSubmittingDistributor(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const payload = {
+        name: distributorForm.name,
+        nameAm: distributorForm.nameAm,
+        code: distributorForm.code,
+        kebeleId: distributorForm.kebeleId,
+        contactPhone: distributorForm.contactPhone,
+        address: distributorForm.address,
+        storekeeper: {
+          fullName: distributorForm.storekeeperFullName,
+          username: distributorForm.storekeeperUsername,
+          password: distributorForm.storekeeperPassword,
+          phone: distributorForm.storekeeperPhone,
+          email: distributorForm.storekeeperEmail
+        }
+      };
+      const res = await api.post('/locations/distributor-with-storekeeper', payload);
+      if (res.data.success) {
+        setSuccessMsg(
+          `Distributor '${res.data.data.distributor.name}' (${res.data.data.distributor.code}) registered! Storekeeper '${res.data.data.storekeeper.username}' can now log in.`
+        );
+        setShowDistributorModal(false);
+        await loadWoredaData();
+      }
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || 'Failed to register Distributor and Storekeeper');
+    } finally {
+      setSubmittingDistributor(false);
+    }
+  };
+
   // Allocation Form
   const [selectedKebeleId, setSelectedKebeleId] = useState('');
   const [allocationItems, setAllocationItems] = useState([
@@ -210,11 +385,15 @@ export const WoredaOfficerPage = () => {
             WOREDA_OFFICER MODULE
           </span>
           <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Debre Berhan City Administration Trade Office (የደብረ ብርሃን ከተማ ንግድ ጽ/ቤት)
+            {woredaData?.woreda?.name
+              ? `${woredaData.woreda.name} Trade Office${woredaData.woreda.nameAm ? ` (${woredaData.woreda.nameAm})` : ''}`
+              : 'Woreda Administration Trade Office'}
           </span>
         </div>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>
-          {currentLang === 'am' ? 'የደብረ ብርሃን ከተማ ንግድና ገበያ ልማት ጽ/ቤት' : 'Debre Berhan City Trade & Market Administration'}
+          {currentLang === 'am'
+            ? (woredaData?.woreda?.nameAm ? `የ${woredaData.woreda.nameAm} ንግድና ገበያ ልማት ጽ/ቤት` : 'የወረዳው ንግድና ገበያ ልማት ጽ/ቤት')
+            : (woredaData?.woreda?.name ? `${woredaData.woreda.name} Trade & Market Administration` : 'Woreda Trade & Market Administration')}
         </h1>
         <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
           {currentLang === 'am'
@@ -294,11 +473,11 @@ export const WoredaOfficerPage = () => {
         <div>
           <div className="grid-cards" style={{ marginBottom: '1.5rem' }}>
             <div className="card">
-              <span className="card-label">City Administration</span>
+              <span className="card-label">{currentLang === 'am' ? 'ወረዳ / ከተማ አስተዳደር' : 'Woreda / City Administration'}</span>
               <div className="card-value" style={{ color: '#1e3a8a' }}>
-                Debre Berhan
+                {currentLang === 'am' ? (woredaData?.woreda?.nameAm || woredaData?.woreda?.name || 'Woreda') : (woredaData?.woreda?.name || 'Woreda')}
               </div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Woreda Code: NSZ-W01</span>
+              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Woreda Code: {woredaData?.woreda?.code || 'NSZ-W01'}</span>
             </div>
 
             <div className="card">
@@ -375,9 +554,41 @@ export const WoredaOfficerPage = () => {
       {/* Module 2: Kebeles & Cooperatives */}
       {activeTab === 'kebeles' && (
         <div className="card" style={{ padding: '1.5rem', background: '#fff' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem' }}>
-            City Kebeles & Consumer Cooperative Associations
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, color: '#1e3a8a' }}>
+                {currentLang === 'am' ? 'የወረዳው ቀበሌዎችና የሸማቾች ኅብረት ሥራ ማህበራት' : 'Woreda Kebeles & Consumer Cooperative Stores'} ({woredaData?.kebeleStats?.length || 0})
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+                {currentLang === 'am'
+                  ? 'እያንዳንዱ ቀበሌ የራሱ ልዩ መለያ (Unique ID)፣ የተመደበ ኃላፊ እና የተመደበ አከፋፋይ መደብር አለው'
+                  : 'Option A: Each Kebele has a unique ID, provisioned officer, and dedicated cooperative distributor store'}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={handleOpenAddKebele}
+                className="btn btn-primary btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
+              >
+                <Plus size={15} />
+                <span>{currentLang === 'am' ? 'አዲስ ቀበሌ እና ኃላፊ መዝግብ' : 'Add Kebele & Officer'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenAddDistributor()}
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, background: '#059669', color: '#fff', border: 'none' }}
+              >
+                <Plus size={15} />
+                <span>{currentLang === 'am' ? 'አከፋፋይ መደብር መዝግብ' : 'Add Distributor Store'}</span>
+              </button>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
             {woredaData?.kebeleStats?.map((k) => (
               <div
@@ -386,23 +597,64 @@ export const WoredaOfficerPage = () => {
                   padding: '1.25rem',
                   border: k.code === 'NSZ-W01-K04' ? '2px solid #16a34a' : '1px solid #e2e8f0',
                   borderRadius: '10px',
-                  background: '#fafafa'
+                  background: '#fafafa',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span className="badge badge-info">{k.code}</span>
-                  {k.code === 'NSZ-W01-K04' && <span className="badge badge-success">CASE STUDY</span>}
-                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span className="badge badge-info" style={{ fontWeight: 700, letterSpacing: '0.04em' }}>
+                      {k.code}
+                    </span>
+                    {k.code === 'NSZ-W01-K04' && <span className="badge badge-success">CASE STUDY</span>}
+                  </div>
 
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.5rem 0' }}>
-                  {k.name} ({k.nameAm})
-                </h4>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
-                  <strong>Store:</strong> {k.store?.name || 'Baso Consumers Cooperative'}
-                </p>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0.2rem 0' }}>
-                  <strong>Census:</strong> {k.householdCount} households • {k.population} residents
-                </p>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 0.5rem 0' }}>
+                    {k.name} {k.nameAm ? `(${k.nameAm})` : ''}
+                  </h4>
+
+                  <div style={{
+                    background: k.store ? '#f0fdf4' : '#fffbeb',
+                    border: k.store ? '1px solid #bbf7d0' : '1px solid #fef3c7',
+                    padding: '0.6rem 0.75rem',
+                    borderRadius: '6px',
+                    marginBottom: '0.6rem'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: k.store ? '#166534' : '#92400e', marginBottom: '0.15rem' }}>
+                      {currentLang === 'am' ? 'የተመደበ አከፋፋይ መደብር' : 'Assigned Distributor Store'}:
+                    </div>
+                    {k.store ? (
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
+                          {k.store.name}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          Code: <strong>{k.store.code || `DIST-${k.code}`}</strong>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#b45309' }}>
+                          {currentLang === 'am' ? 'አከፋፋይ አልተመደበም' : 'No store assigned yet'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddDistributor(k._id)}
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.7rem', padding: '2px 8px', height: 'auto', background: '#059669', color: '#fff', border: 'none' }}
+                        >
+                          + {currentLang === 'am' ? 'መደብር መዝግብ' : 'Assign Store'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0.2rem 0' }}>
+                    <strong>Census:</strong> {k.householdCount?.toLocaleString() || 0} households • {k.population?.toLocaleString() || 0} residents
+                  </p>
+                </div>
 
                 <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e3a8a', display: 'block', marginBottom: '0.3rem' }}>
@@ -429,7 +681,9 @@ export const WoredaOfficerPage = () => {
             Census-Based Proportional Stock Allocation to Kebeles
           </h3>
           <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem' }}>
-            Allocates incoming quota from Debre Berhan City to Kebele cooperative stores and establishes family quota rules.
+            {currentLang === 'am'
+              ? `ከ${woredaData?.woreda?.nameAm || woredaData?.woreda?.name || 'ወረዳው'} ወደ ቀበሌ ህብረት ስራ ማህበራት ሱቆች ድልድል ማስተላለፊያ እና የቤተሰብ መጠን ኮታ ደንቦች`
+              : `Allocates incoming quota from ${woredaData?.woreda?.name || 'Woreda'} to Kebele cooperative stores and establishes family quota rules.`}
           </p>
 
           <div style={{ maxWidth: '600px' }}>
@@ -622,10 +876,14 @@ export const WoredaOfficerPage = () => {
                 የሰሜን ሸዋ ዞን አስተዳደር
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>
-                የደብረ ብርሃን ከተማ አስተዳደር ንግድና ገበያ ልማት ጽህፈት ቤት
+                {woredaData?.woreda?.nameAm
+                  ? `የ${woredaData.woreda.nameAm} ንግድና ገበያ ልማት ጽህፈት ቤት`
+                  : 'የደብረ ብርሃን ከተማ አስተዳደር ንግድና ገበያ ልማት ጽህፈት ቤት'}
               </div>
               <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
-                Debre Berhan City Administration Trade & Market Development Office
+                {woredaData?.woreda?.name
+                  ? `${woredaData.woreda.name} Trade & Market Development Office`
+                  : 'Debre Berhan City Administration Trade & Market Development Office'}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', fontSize: '0.85rem' }}>
                 <span><strong>ቁጥር (Ref No):</strong> {letterData?.letterNumber || 'AL-NSZ-W01-2026-004'}</span>
@@ -771,7 +1029,7 @@ export const WoredaOfficerPage = () => {
               <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
                 {currentLang === 'am'
                   ? 'በወረዳው ስር ላሉ ቀበሌዎች መዝጋቢ ኦፊሰሮችንና የህብረት ስራ ማህበር ሱቅ ኃላፊዎችን ማስተዳደር'
-                  : 'Directly provision Kebele Record Officers and Cooperative Storekeepers strictly within Debre Berhan boundary'}
+                  : `Directly provision Kebele Record Officers and Cooperative Storekeepers strictly within ${woredaData?.woreda?.name || 'Woreda'} boundary`}
               </p>
             </div>
 
@@ -1040,6 +1298,566 @@ export const WoredaOfficerPage = () => {
                 </button>
                 <button type="submit" className="btn btn-primary btn-sm">
                   Reset Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Option A: Provision Kebele & Officer Modal */}
+      {showKebeleModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050,
+          padding: '1rem',
+          backdropFilter: 'blur(3px)'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '680px',
+            maxHeight: '92vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+            border: '1px solid #cbd5e1'
+          }}>
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#f8fafc'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e3a8a' }}>
+                  {currentLang === 'am' ? 'አዲስ ቀበሌ እና ኃላፊ መመዝገቢያ' : 'Provision Kebele & Record Officer'}
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  Option A: Simultaneous Registration of Kebele Division & Record Officer Account
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowKebeleModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitKebele} style={{ padding: '1.5rem' }}>
+              {/* Section 1: Kebele Details */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#1e3a8a',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  marginBottom: '0.75rem',
+                  paddingBottom: '0.35rem',
+                  borderBottom: '2px solid #e2e8f0'
+                }}>
+                  <Building2 size={15} />
+                  1. {currentLang === 'am' ? 'የቀበሌው መረጃ (Kebele Division)' : 'Kebele Details'}
+                </span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የቀበሌ ስም (English)' : 'Kebele Name (English)'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. Kebele 05"
+                      value={kebeleForm.name}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የአማርኛ መጠሪያ' : 'Amharic Name'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="ምሳሌ፡ ቀበሌ 05"
+                      value={kebeleForm.nameAm}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, nameAm: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ልዩ የቀበሌ ኮድ (Unique Code)' : 'Unique Kebele Code'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}
+                      value={kebeleForm.code}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, code: e.target.value.toUpperCase() })}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                      Format: {woredaData?.woreda?.code || 'NSZ-W01'}-K01 to K99
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'አባወራዎች' : 'Estimated Households'}
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="e.g. 3500"
+                      value={kebeleForm.householdCount}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, householdCount: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የህዝብ ብዛት' : 'Estimated Population'}
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="e.g. 15000"
+                      value={kebeleForm.population}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, population: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'መንደሮች / ጎጦች (በነጠላ ሰረዝ)' : 'Village Blocks (Gots - Comma Separated)'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Got 01, Got 02, Got 03"
+                      value={kebeleForm.gotsString}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, gotsString: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Kebele Officer Login Credentials */}
+              <div style={{ marginTop: '1.25rem', marginBottom: '1.25rem' }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#1e3a8a',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  marginBottom: '0.75rem',
+                  paddingBottom: '0.35rem',
+                  borderBottom: '2px solid #e2e8f0'
+                }}>
+                  <Key size={15} />
+                  2. {currentLang === 'am' ? 'የቀበሌ ኃላፊ መለያ (Officer Login Account)' : 'Assigned Kebele Officer Account'}
+                </span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ሙሉ ስም' : 'Officer Full Name'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. Fatuma Mohammed"
+                      value={kebeleForm.officerFullName}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, officerFullName: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የተጠቃሚ ስም (Username)' : 'Username'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. kebele05_admin"
+                      value={kebeleForm.officerUsername}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, officerUsername: e.target.value.toLowerCase().trim() })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ስልክ ቁጥር' : 'Phone Number'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. +251 911 334455"
+                      value={kebeleForm.officerPhone}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, officerPhone: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ኢሜል (Email)' : 'Email'}
+                    </label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      placeholder="e.g. kebele05@woreda.gov.et"
+                      value={kebeleForm.officerEmail}
+                      onChange={(e) => setKebeleForm({ ...kebeleForm, officerEmail: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                    {currentLang === 'am' ? 'ጊዜያዊ የይለፍ ቃል' : 'Initial Password'} *
+                  </label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    required
+                    placeholder="••••••••"
+                    value={kebeleForm.officerPassword}
+                    onChange={(e) => setKebeleForm({ ...kebeleForm, officerPassword: e.target.value })}
+                  />
+                  <PasswordRequirements
+                    password={kebeleForm.officerPassword}
+                    username={kebeleForm.officerUsername}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowKebeleModal(false)}
+                  disabled={submittingKebele}
+                >
+                  {currentLang === 'am' ? 'ይቅር' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={submittingKebele}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                >
+                  <ShieldCheck size={16} />
+                  <span>
+                    {submittingKebele
+                      ? (currentLang === 'am' ? 'በመመዝገብ ላይ...' : 'Provisioning...')
+                      : (currentLang === 'am' ? 'ቀበሌ እና ኃላፊ መዝግብ' : 'Create Kebele & Officer')}
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Option A: Register Distributor & Storekeeper Modal */}
+      {showDistributorModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050,
+          padding: '1rem',
+          backdropFilter: 'blur(3px)'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '680px',
+            maxHeight: '92vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+            border: '1px solid #cbd5e1'
+          }}>
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#f8fafc'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#059669' }}>
+                  {currentLang === 'am' ? 'አከፋፋይ የህብረት ስራ መደብር እና መጋዘንተኛ መመዝገቢያ' : 'Register Distributor Store & Storekeeper'}
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  Option A: Set up Primary Kebele Consumer Cooperative Distributor & Storekeeper Account
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDistributorModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitDistributor} style={{ padding: '1.5rem' }}>
+              {/* Section 1: Store / Distributor Unit */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#059669',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  marginBottom: '0.75rem',
+                  paddingBottom: '0.35rem',
+                  borderBottom: '2px solid #e2e8f0'
+                }}>
+                  <Building2 size={15} />
+                  1. {currentLang === 'am' ? 'የአከፋፋይ መደብሩ መረጃ' : 'Distributor Store Information'}
+                </span>
+
+                <div className="form-group">
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                    {currentLang === 'am' ? 'የሚመደብበት ቀበሌ' : 'Assigned Kebele'} *
+                  </label>
+                  <select
+                    className="form-control"
+                    required
+                    value={distributorForm.kebeleId}
+                    onChange={(e) => handleKebeleChangeForDistributor(e.target.value)}
+                  >
+                    <option value="">-- {currentLang === 'am' ? 'ቀበሌ ይምረጡ' : 'Select Kebele'} --</option>
+                    {woredaData?.kebeleStats?.map(k => (
+                      <option key={k._id} value={k._id}>
+                        {k.name} ({k.code}) {k.store ? `[Store: ${k.store.code || k.store.name}]` : '[No Store]'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የመደብሩ ስም (English)' : 'Store Name (English)'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. Baso Consumer Cooperative Store"
+                      value={distributorForm.name}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የአማርኛ ስም' : 'Amharic Name'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="ምሳሌ፡ የባሶ ቀበሌ ሸማቾች ህብረት ስራ ማህበር"
+                      value={distributorForm.nameAm}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, nameAm: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ልዩ የአከፋፋይ ኮድ (Unique Code)' : 'Unique Distributor Code'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}
+                      value={distributorForm.code}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, code: e.target.value.toUpperCase() })}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                      Format: DIST-{'{KebeleCode}'} (Unique indexed)
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'አድራሻ / የመደብሩ ቦታ' : 'Physical Address / Location'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. Near Kebele Administration Office"
+                      value={distributorForm.address}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, address: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Storekeeper Login Credentials */}
+              <div style={{ marginTop: '1.25rem', marginBottom: '1.25rem' }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#059669',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  marginBottom: '0.75rem',
+                  paddingBottom: '0.35rem',
+                  borderBottom: '2px solid #e2e8f0'
+                }}>
+                  <Key size={15} />
+                  2. {currentLang === 'am' ? 'የመጋዘንተኛው መለያ (Storekeeper Login Account)' : 'Assigned Storekeeper Account'}
+                </span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ሙሉ ስም' : 'Storekeeper Full Name'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. Solomon Bekele"
+                      value={distributorForm.storekeeperFullName}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, storekeeperFullName: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የተጠቃሚ ስም (Username)' : 'Username'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. baso_storekeeper"
+                      value={distributorForm.storekeeperUsername}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, storekeeperUsername: e.target.value.toLowerCase().trim() })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ስልክ ቁጥር' : 'Phone Number'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. +251 911 445566"
+                      value={distributorForm.storekeeperPhone}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, storekeeperPhone: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ኢሜል (Email)' : 'Email'}
+                    </label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      placeholder="e.g. store@cooperative.et"
+                      value={distributorForm.storekeeperEmail}
+                      onChange={(e) => setDistributorForm({ ...distributorForm, storekeeperEmail: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                    {currentLang === 'am' ? 'ጊዜያዊ የይለፍ ቃል' : 'Initial Password'} *
+                  </label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    required
+                    placeholder="••••••••"
+                    value={distributorForm.storekeeperPassword}
+                    onChange={(e) => setDistributorForm({ ...distributorForm, storekeeperPassword: e.target.value })}
+                  />
+                  <PasswordRequirements
+                    password={distributorForm.storekeeperPassword}
+                    username={distributorForm.storekeeperUsername}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowDistributorModal(false)}
+                  disabled={submittingDistributor}
+                >
+                  {currentLang === 'am' ? 'ይቅር' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={submittingDistributor}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, background: '#059669', borderColor: '#059669' }}
+                >
+                  <ShieldCheck size={16} />
+                  <span>
+                    {submittingDistributor
+                      ? (currentLang === 'am' ? 'በመመዝገብ ላይ...' : 'Registering...')
+                      : (currentLang === 'am' ? 'አከፋፋይ እና መጋዘንተኛ መዝግብ' : 'Register Distributor & Storekeeper')}
+                  </span>
                 </button>
               </div>
             </form>

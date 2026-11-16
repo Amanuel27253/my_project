@@ -13,9 +13,14 @@ import {
   FileText,
   Save,
   Search,
-  Filter
+  Filter,
+  Plus,
+  X,
+  Key,
+  ShieldCheck
 } from 'lucide-react';
 import { NORTH_SHEWA_WOREDAS } from '../constants/northShewaWoredas';
+import { PasswordRequirements } from '../components/PasswordRequirements';
 
 export const ZoneExpertPage = () => {
   const { t, i18n } = useTranslation();
@@ -45,6 +50,82 @@ export const ZoneExpertPage = () => {
     wheat: 80000,
     teff: 30000
   });
+
+  // Add Woreda & Officer Provisioning State (Option A)
+  const [showWoredaModal, setShowWoredaModal] = useState(false);
+  const [submittingWoreda, setSubmittingWoreda] = useState(false);
+  const [woredaForm, setWoredaForm] = useState({
+    name: '',
+    nameAm: '',
+    code: '',
+    adminType: 'RURAL_WOREDA',
+    population: '',
+    householdCount: '',
+    officerFullName: '',
+    officerUsername: '',
+    officerPassword: '',
+    officerPhone: '',
+    officerEmail: ''
+  });
+
+  const handleOpenAddWoreda = async () => {
+    try {
+      const codeRes = await api.get('/locations/next-code?type=woreda');
+      const suggestedCode = codeRes.data?.data?.nextCode || 'NSZ-W29';
+      setWoredaForm({
+        name: '',
+        nameAm: '',
+        code: suggestedCode,
+        adminType: 'RURAL_WOREDA',
+        population: '',
+        householdCount: '',
+        officerFullName: '',
+        officerUsername: '',
+        officerPassword: '',
+        officerPhone: '',
+        officerEmail: ''
+      });
+      setShowWoredaModal(true);
+    } catch {
+      setShowWoredaModal(true);
+    }
+  };
+
+  const handleSubmitWoreda = async (e) => {
+    e.preventDefault();
+    setSubmittingWoreda(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const payload = {
+        name: woredaForm.name,
+        nameAm: woredaForm.nameAm,
+        code: woredaForm.code,
+        adminType: woredaForm.adminType,
+        population: Number(woredaForm.population) || 0,
+        householdCount: Number(woredaForm.householdCount) || 0,
+        officer: {
+          fullName: woredaForm.officerFullName,
+          username: woredaForm.officerUsername,
+          password: woredaForm.officerPassword,
+          phone: woredaForm.officerPhone,
+          email: woredaForm.officerEmail
+        }
+      };
+      const res = await api.post('/locations/woreda-with-officer', payload);
+      if (res.data.success) {
+        setSuccessMsg(
+          `Woreda '${res.data.data.woreda.name}' (${res.data.data.woreda.code}) registered! Officer Username: '${res.data.data.officer.username}' can now log in.`
+        );
+        setShowWoredaModal(false);
+        await loadZoneData();
+      }
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || 'Failed to create Woreda and Officer');
+    } finally {
+      setSubmittingWoreda(false);
+    }
+  };
 
   const loadZoneData = async () => {
     try {
@@ -364,6 +445,22 @@ export const ZoneExpertPage = () => {
                   {currentLang === 'am' ? 'ገጠር ወረዳዎች (22)' : 'Rural (22)'}
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddWoreda}
+                className="btn btn-primary btn-sm"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontWeight: 600,
+                  height: '36px'
+                }}
+              >
+                <Plus size={15} />
+                <span>{currentLang === 'am' ? 'አዲስ ወረዳ እና ኃላፊ መዝግብ' : 'Add Woreda & Officer'}</span>
+              </button>
             </div>
           </div>
 
@@ -722,6 +819,294 @@ export const ZoneExpertPage = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+      {/* Option A: Provision Woreda & Officer Modal */}
+      {showWoredaModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1050,
+          padding: '1rem',
+          backdropFilter: 'blur(3px)'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '680px',
+            maxHeight: '92vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+            border: '1px solid #cbd5e1'
+          }}>
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#f8fafc'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e3a8a' }}>
+                  {currentLang === 'am' ? 'አዲስ ወረዳ እና ኃላፊ መመዝገቢያ' : 'Provision Woreda & Trade Officer'}
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  Option A: Simultaneous Registration of Administrative Division & Staff Credentials
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWoredaModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitWoreda} style={{ padding: '1.5rem' }}>
+              {/* Section 1: Location Unit */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#1e3a8a',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  marginBottom: '0.75rem',
+                  paddingBottom: '0.35rem',
+                  borderBottom: '2px solid #e2e8f0'
+                }}>
+                  <MapPin size={15} />
+                  1. {currentLang === 'am' ? 'የወረዳው መረጃ (Territorial Division)' : 'Woreda Office Details'}
+                </span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የወረዳ ስም (English)' : 'Woreda Name (English)'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. Basona Werana"
+                      value={woredaForm.name}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የአማርኛ ስም' : 'Amharic Name'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="ምሳሌ፡ ባሶና ወራና"
+                      value={woredaForm.nameAm}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, nameAm: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ልዩ የወረዳ ኮድ (Unique Code)' : 'Unique Woreda Code'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}
+                      value={woredaForm.code}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, code: e.target.value.toUpperCase() })}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                      Format: NSZ-W01 to NSZ-W99 (Guaranteed unique index)
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'አስተዳደራዊ ምድብ' : 'Administration Type'} *
+                    </label>
+                    <select
+                      className="form-control"
+                      value={woredaForm.adminType}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, adminType: e.target.value })}
+                    >
+                      <option value="RURAL_WOREDA">Rural Woreda (የገጠር ወረዳ)</option>
+                      <option value="CITY_ADMIN">City Administration (የከተማ አስተዳደር)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የህዝብ ብዛት' : 'Estimated Population'}
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="e.g. 85000"
+                      value={woredaForm.population}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, population: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'አባወራዎች' : 'Estimated Households'}
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="e.g. 20000"
+                      value={woredaForm.householdCount}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, householdCount: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Officer Login Credentials */}
+              <div style={{ marginTop: '1.25rem', marginBottom: '1.25rem' }}>
+                <span style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#1e3a8a',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  marginBottom: '0.75rem',
+                  paddingBottom: '0.35rem',
+                  borderBottom: '2px solid #e2e8f0'
+                }}>
+                  <Key size={15} />
+                  2. {currentLang === 'am' ? 'የወረዳ ንግድ ኃላፊ መለያ (Officer Login Account)' : 'Assigned Woreda Officer Account'}
+                </span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ሙሉ ስም' : 'Officer Full Name'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. Abebe Bikila"
+                      value={woredaForm.officerFullName}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, officerFullName: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'የተጠቃሚ ስም (Username)' : 'Username'} *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      required
+                      placeholder="e.g. basona_officer"
+                      value={woredaForm.officerUsername}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, officerUsername: e.target.value.toLowerCase().trim() })}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                      Must be unique across the entire system.
+                    </small>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginTop: '0.5rem' }}>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ስልክ ቁጥር' : 'Phone Number'}
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. +251 911 223344"
+                      value={woredaForm.officerPhone}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, officerPhone: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                      {currentLang === 'am' ? 'ኢሜል (Email)' : 'Email'}
+                    </label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      placeholder="e.g. officer@northshewa.gov.et"
+                      value={woredaForm.officerEmail}
+                      onChange={(e) => setWoredaForm({ ...woredaForm, officerEmail: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                    {currentLang === 'am' ? 'ጊዜያዊ የይለፍ ቃል' : 'Initial Password'} *
+                  </label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    required
+                    placeholder="••••••••"
+                    value={woredaForm.officerPassword}
+                    onChange={(e) => setWoredaForm({ ...woredaForm, officerPassword: e.target.value })}
+                  />
+                  <PasswordRequirements
+                    password={woredaForm.officerPassword}
+                    username={woredaForm.officerUsername}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowWoredaModal(false)}
+                  disabled={submittingWoreda}
+                >
+                  {currentLang === 'am' ? 'ይቅር' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={submittingWoreda}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                >
+                  <ShieldCheck size={16} />
+                  <span>
+                    {submittingWoreda
+                      ? (currentLang === 'am' ? 'በመመዝገብ ላይ...' : 'Provisioning...')
+                      : (currentLang === 'am' ? 'ወረዳ እና ኃላፊ መዝግብ' : 'Create Woreda & User')}
+                  </span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

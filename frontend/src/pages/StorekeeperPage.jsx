@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import {
   Store,
   ArrowDownCircle,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export const StorekeeperPage = () => {
+  const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
 
@@ -52,11 +54,16 @@ export const StorekeeperPage = () => {
   const loadStoreData = async () => {
     try {
       setLoading(true);
-      // Case study: Baso Kebele
-      const kebeleCode = 'NSZ-W01-K04';
-      const portalRes = await api.get(`/distribution-management/public/portal?kebeleCode=${kebeleCode}`);
-      if (portalRes.data.success) {
-        setStoreData(portalRes.data.data.store);
+      // Fetch store stock specific to this logged in storekeeper
+      const stockRes = await api.get('/distribution-management/store/stocks/me');
+      if (stockRes.data.success && stockRes.data.data) {
+        setStoreData(stockRes.data.data);
+      } else {
+        const kebeleCode = user?.location?.code || 'NSZ-W01-K04';
+        const portalRes = await api.get(`/distribution-management/public/portal?kebeleCode=${kebeleCode}`);
+        if (portalRes.data.success) {
+          setStoreData(portalRes.data.data.store);
+        }
       }
 
       // Load daily report
@@ -66,7 +73,7 @@ export const StorekeeperPage = () => {
       }
 
       // Load poster data
-      const sampleKebeleId = '65e000000000000000000002'; // default or from store
+      const sampleKebeleId = user?.location?._id || user?.locationId || '65e000000000000000000002';
       const postRes = await api.get(`/distribution-management/store/notice-poster/${sampleKebeleId}`);
       if (postRes.data.success) {
         setPosterData(postRes.data.data);
@@ -170,11 +177,11 @@ export const StorekeeperPage = () => {
             STOREKEEPER MODULE
           </span>
           <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Baso Kebele Consumer Cooperative Store (የባሶ ቀበሌ ሸማቾች ኅብረት ሥራ ማኅበር መደብር)
+            {storeData?.name || 'Consumer Cooperative Store'} • Code: <strong>{storeData?.code || 'COOP-STORE'}</strong>
           </span>
         </div>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>
-          {currentLang === 'am' ? 'ባሶ ቀበሌ የሸማቾች ማህበር መደብር አስተዳደር' : 'Baso Cooperative Store Point-of-Sale & Inventory'}
+          {storeData?.name || (currentLang === 'am' ? 'የሸማቾች ማህበር መደብር አስተዳደር' : 'Cooperative Store Point-of-Sale & Inventory')}
         </h1>
         <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
           {currentLang === 'am'

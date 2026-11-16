@@ -461,10 +461,32 @@ const confirmStockArrival = async (req, res) => {
 const getStoreStock = async (req, res) => {
   try {
     const { kebeleId } = req.params;
-    const store = await CooperativeStore.findOne({ kebeleId })
+    let query = {};
+    if (kebeleId === 'me' || !kebeleId) {
+      if (req.user) {
+        query = {
+          $or: [
+            { storekeeperId: req.user._id },
+            { kebeleId: req.user.locationId ? (req.user.locationId._id || req.user.locationId) : null }
+          ]
+        };
+      }
+    } else {
+      query = { kebeleId };
+    }
+
+    let store = await CooperativeStore.findOne(query)
       .populate('kebeleId', 'name nameAm code gots')
       .populate('woredaId', 'name nameAm code')
       .populate('storekeeperId', 'fullName phone');
+
+    // Fallback if not found and user has no store yet
+    if (!store && (kebeleId === 'me' || !kebeleId)) {
+      store = await CooperativeStore.findOne()
+        .populate('kebeleId', 'name nameAm code gots')
+        .populate('woredaId', 'name nameAm code')
+        .populate('storekeeperId', 'fullName phone');
+    }
 
     if (!store) {
       return errorResponse(res, 'Store not found for this Kebele', 404);
@@ -761,9 +783,18 @@ const getDailyStockCashReport = async (req, res) => {
     const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
 
-    const store = filterStoreId
-      ? await CooperativeStore.findById(filterStoreId).populate('kebeleId woredaId')
-      : await CooperativeStore.findOne().populate('kebeleId woredaId');
+    let store = null;
+    if (filterStoreId) {
+      store = await CooperativeStore.findById(filterStoreId).populate('kebeleId woredaId');
+    } else if (req.user) {
+      store = await CooperativeStore.findOne({ storekeeperId: req.user._id }).populate('kebeleId woredaId');
+      if (!store && req.user.locationId) {
+        store = await CooperativeStore.findOne({ kebeleId: req.user.locationId._id || req.user.locationId }).populate('kebeleId woredaId');
+      }
+    }
+    if (!store) {
+      store = await CooperativeStore.findOne().populate('kebeleId woredaId');
+    }
 
     if (!store) {
       return errorResponse(res, 'Cooperative store not found', 404);

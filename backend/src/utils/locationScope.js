@@ -8,7 +8,8 @@ const Location = require('../models/Location');
  * - Kebele level user: Only that Kebele
  */
 const getAccessibleLocationIds = async (user) => {
-  if (user.role === 'admin') {
+  const roleUpper = (user.role || '').toUpperCase();
+  if (roleUpper === 'ADMIN' || roleUpper === 'SYSTEM_ADMIN' || user.role === 'admin') {
     return null; // Null means all locations
   }
 

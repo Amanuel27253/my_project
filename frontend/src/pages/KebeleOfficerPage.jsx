@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import {
   Users,
   UserPlus,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 export const KebeleOfficerPage = () => {
+  const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language || 'en';
 
@@ -27,8 +29,20 @@ export const KebeleOfficerPage = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Case Study: Baso Kebele
-  const basoKebele = {
+  // Dynamically resolve Kebele from logged-in Officer
+  const userKebele = user?.location;
+  const currentKebele = userKebele ? {
+    _id: userKebele._id || user?.locationId,
+    name: userKebele.name || 'Kebele Administration',
+    nameAm: userKebele.nameAm || userKebele.name || '',
+    code: userKebele.code || 'KEBELE',
+    gots: (userKebele.gots && userKebele.gots.length) ? userKebele.gots : [
+      'Got 01 (መሀል ሰፈር)',
+      'Got 02 (አባይ ማዶ)',
+      'Got 03 (ወይራ ሰፈር)',
+      'Got 04 (ብርሃን ሰፈር)'
+    ]
+  } : {
     _id: 'kebele_baso_id',
     name: 'Baso Kebele',
     nameAm: 'ባሶ ቀበሌ',
@@ -130,8 +144,10 @@ export const KebeleOfficerPage = () => {
     setSuccessMsg('');
 
     try {
-      // Find Baso Kebele ObjectId from first household or system
-      const sampleKebeleId = households[0]?.kebeleId?._id || households[0]?.kebeleId;
+      // Find Kebele ObjectId from user profile or loaded households
+      const targetKebeleId = currentKebele._id !== 'kebele_baso_id'
+        ? currentKebele._id
+        : (households[0]?.kebeleId?._id || households[0]?.kebeleId);
 
       const payload = {
         headName: regForm.headName,
@@ -142,7 +158,7 @@ export const KebeleOfficerPage = () => {
         phone: regForm.phone.trim(),
         got: regForm.got,
         houseNumber: regForm.houseNumber,
-        kebeleId: sampleKebeleId,
+        kebeleId: targetKebeleId,
         familyMembers: regForm.familyMembers
       };
 
@@ -216,11 +232,11 @@ export const KebeleOfficerPage = () => {
             KEBELE_OFFICER MODULE
           </span>
           <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Case Study: Baso Kebele (ባሶ ቀበሌ), Debre Berhan City Administration (NSZ-W01-K04)
+            {currentKebele.name} {currentKebele.nameAm ? `(${currentKebele.nameAm})` : ''} • Code: <strong>{currentKebele.code}</strong>
           </span>
         </div>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>
-          {currentLang === 'am' ? 'የባሶ ቀበሌ የህዝብ መዝገብና የደብተር አስተዳደር' : 'Baso Kebele Census & Paper Booklet Administration'}
+          {currentLang === 'am' ? `${currentKebele.nameAm || currentKebele.name} የህዝብ መዝገብና የደብተር አስተዳደር` : `${currentKebele.name} Census & Booklet Administration`}
         </h1>
         <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
           {currentLang === 'am'
@@ -464,7 +480,7 @@ export const KebeleOfficerPage = () => {
                   value={regForm.got}
                   onChange={(e) => setRegForm({ ...regForm, got: e.target.value })}
                 >
-                  {basoKebele.gots.map((g, idx) => (
+                  {currentKebele.gots.map((g, idx) => (
                     <option key={idx} value={g}>
                       {g}
                     </option>
@@ -826,7 +842,7 @@ export const KebeleOfficerPage = () => {
                   value={scheduleForm.got}
                   onChange={(e) => setScheduleForm({ ...scheduleForm, got: e.target.value })}
                 >
-                  {basoKebele.gots.map((g, idx) => (
+                  {currentKebele.gots.map((g, idx) => (
                     <option key={idx} value={g}>
                       {g}
                     </option>
