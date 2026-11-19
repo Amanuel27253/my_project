@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import api from '../api/client';
@@ -25,7 +26,26 @@ export const AdminPage = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState('users'); // 'users', 'offices', 'goods', 'quotas', 'security'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(urlTab || 'users');
+
+  useEffect(() => {
+    if (urlTab && ['users', 'offices', 'goods', 'quotas', 'security'].includes(urlTab)) {
+      setActiveTab(urlTab);
+      if (urlTab === 'security') {
+        fetchSecurityData();
+      }
+    }
+  }, [urlTab]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams({ tab: newTab });
+    if (newTab === 'security') {
+      fetchSecurityData();
+    }
+  };
   const [users, setUsers] = useState([]);
   const [locations, setLocations] = useState([]);
   const [goods, setGoods] = useState([]);
@@ -282,34 +302,31 @@ export const AdminPage = () => {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
         <button
-          onClick={() => setActiveTab('users')}
+          onClick={() => handleTabChange('users')}
           className={`btn ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}`}
         >
           <ShieldCheck size={16} /> Users & Roles ({users.length})
         </button>
         <button
-          onClick={() => setActiveTab('offices')}
+          onClick={() => handleTabChange('offices')}
           className={`btn ${activeTab === 'offices' ? 'btn-primary' : 'btn-secondary'}`}
         >
           <MapPin size={16} /> Administrative Offices ({locations.length})
         </button>
         <button
-          onClick={() => setActiveTab('goods')}
+          onClick={() => handleTabChange('goods')}
           className={`btn ${activeTab === 'goods' ? 'btn-primary' : 'btn-secondary'}`}
         >
           <Package size={16} /> Goods Catalog ({goods.length})
         </button>
         <button
-          onClick={() => setActiveTab('quotas')}
+          onClick={() => handleTabChange('quotas')}
           className={`btn ${activeTab === 'quotas' ? 'btn-primary' : 'btn-secondary'}`}
         >
           <Layers size={16} /> Quota Allocation Rules ({quotaRules.length})
         </button>
         <button
-          onClick={() => {
-            setActiveTab('security');
-            fetchSecurityData();
-          }}
+          onClick={() => handleTabChange('security')}
           className={`btn ${activeTab === 'security' ? 'btn-primary' : 'btn-secondary'}`}
         >
           <Database size={16} /> Platform Security & Backups

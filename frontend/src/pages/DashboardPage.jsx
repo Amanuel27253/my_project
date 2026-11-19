@@ -71,9 +71,6 @@ export const DashboardPage = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <Link to="/public" className="btn btn-secondary btn-sm" style={{ borderColor: '#059669', color: '#059669', fontWeight: 600 }}>
-            Public Citizen Portal
-          </Link>
           {(user?.role === 'admin' || user?.role === 'SYSTEM_ADMIN' || user?.role === 'kebele_officer' || user?.role === 'KEBELE_OFFICER') && (
             <Link to="/kebele" className="btn btn-primary btn-sm">
               <Users size={15} />

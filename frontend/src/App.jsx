@@ -2,10 +2,11 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { Layout } from './components/Layout';
+import { AdminLayout } from './components/AdminLayout';
 
 import { LoginPage } from './pages/LoginPage';
-import { PublicPortalPage } from './pages/PublicPortalPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { StockRequestsPage } from './pages/StockRequestsPage';
@@ -27,13 +28,28 @@ export function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* 1. Public Citizen Portal (Zero Login Required) */}
-          <Route path="/public" element={<PublicPortalPage />} />
-
-          {/* Authentication */}
+          {/* 1. Dual-Mode Authentication Gateway (Civil Service vs System Admin) */}
           <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Application Layout */}
+          {/* 3. DEDICATED SYSTEM ADMIN CONSOLE (Option A / Approach 2)
+                 Strictly gated for System Administrators (RBAC & Separation of Duties) */}
+          <Route
+            path="/admin"
+            element={
+              <AdminProtectedRoute>
+                <AdminLayout />
+              </AdminProtectedRoute>
+            }
+          >
+            <Route index element={<AdminPage />} />
+            <Route path="audit-logs" element={<AuditLogPage />} />
+          </Route>
+
+          {/* Legacy route alias for audit logs -> redirects to admin console */}
+          <Route path="/audit-logs" element={<Navigate to="/admin/audit-logs" replace />} />
+
+          {/* 4. CIVIL SERVICE OPERATIONAL WORKSPACE
+                 Tailored for Zone, Woreda, Kebele & Storekeeper Staff */}
           <Route
             path="/"
             element={
@@ -44,7 +60,7 @@ export function App() {
           >
             <Route index element={<DashboardPage />} />
 
-            {/* Enterprise Role Modules */}
+            {/* Governance Workstations */}
             <Route
               path="zone"
               element={
@@ -81,33 +97,16 @@ export function App() {
               }
             />
 
-            {/* Core Operations */}
+            {/* Operational Activities */}
             <Route path="beneficiaries" element={<BeneficiariesPage />} />
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="requests" element={<StockRequestsPage />} />
             <Route path="distribution" element={<DistributionPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="alerts" element={<AlertsPage />} />
-
-            {/* Admin Only Routes */}
-            <Route
-              path="admin"
-              element={
-                <ProtectedRoute allowedRoles={['SYSTEM_ADMIN', 'admin']}>
-                  <AdminPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="audit-logs"
-              element={
-                <ProtectedRoute allowedRoles={['SYSTEM_ADMIN', 'admin']}>
-                  <AuditLogPage />
-                </ProtectedRoute>
-              }
-            />
           </Route>
 
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

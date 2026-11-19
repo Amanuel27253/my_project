@@ -17,7 +17,6 @@ import {
   Building2,
   UserCheck,
   Store,
-  Globe,
   Printer
 } from 'lucide-react';
 
@@ -140,33 +139,19 @@ export const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
           <span>{t('nav.alerts', 'Alerts & Warnings')}</span>
         </NavLink>
 
-        {/* Zero-Login Public Transparency Portal Link */}
-        <div style={{ margin: '0.9rem 0.5rem 0.25rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-          CITIZEN TRANSPARENCY
-        </div>
-
-        <NavLink to="/public" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
-          <Globe size={18} color="#059669" />
-          <span style={{ fontWeight: 600 }}>Public Citizen Portal (Zero Login)</span>
-        </NavLink>
-
-        {/* Admin Section */}
-        {hasRole('SYSTEM_ADMIN', 'admin') && (
-          <>
-            <div style={{ margin: '0.9rem 0.5rem 0.25rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-              ADMINISTRATION
-            </div>
-
-            <NavLink to="/admin" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
-              <ShieldCheck size={18} />
-              <span>{t('nav.settings', 'Admin Console')}</span>
+        {/* Administrator Quick Bridge (Only visible if Admin is reviewing operations) */}
+        {(user?.role === 'SYSTEM_ADMIN' || user?.role === 'admin') && (
+          <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+            <NavLink
+              to="/admin"
+              className="nav-link"
+              onClick={handleLinkClick}
+              style={{ background: 'rgba(15, 23, 42, 0.05)', color: '#0f172a', fontWeight: 600, border: '1px solid var(--border)' }}
+            >
+              <ShieldCheck size={18} color="#0284c7" />
+              <span>Switch to Admin Console</span>
             </NavLink>
-
-            <NavLink to="/audit-logs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={handleLinkClick}>
-              <History size={18} />
-              <span>{t('nav.auditLog', 'Audit Logs')}</span>
-            </NavLink>
-          </>
+          </div>
         )}
       </nav>
     </aside>
